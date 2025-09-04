@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# Made by Sinfallas <sinfallas@yahoo.com>
+# Licence: GPL-2
+LC_ALL=C
+nom=$(basename "$0")
+
+function ayuda() {
+	echo "Ejemplo: $nom /home/user/key.ppk /home/user/id_dsa"
+	exit 1
+}
+
+if [[ "$EUID" != "0" ]]; then
+	echo "ERROR: Debe ser root"
+	exit 1
+fi
+
+if [[ -z "$1" ]]; then
+	ayuda
+fi
+
+if [[ -z "$2" ]]; then
+	ayuda
+fi
+
+if [[ $(dpkg --get-selections | grep -w "putty-tools" | awk '{print $1}' | head -1) = putty-tools ]]; then
+	echo "Convertiendo llave privada"
+	puttygen $1 -O private-openssh -o $2
+	echo "Convirtiendo llave publica"
+	puttygen $1 -O public-openssh -o $2.pub
+	chmod 600 $2
+	chmod 666 $2.pub
+else
+	echo "ERROR: El paquete putty-tools no esta instalado, se procede a instalar"
+	apt update -q
+	apt -y install putty-tools
+	apt clean
+fi
+
+echo "Finalizado."
+exit 0
